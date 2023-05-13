@@ -1,0 +1,69 @@
+P3 linear model + Gradient Descent
+P4 sigmoid model  + ReLU(Rectified Linear Unit) + layer 
+   Neuron  NN
+
+
+P13 softmax  图像识别  network structur=trial and error+intuition
+P14 Backpropagation
+P15 Regression overfitting Regularization
+P16 Classification  Classification!=regression 定义好坏的方式不同；多个类
+Loss fuction 错误次数  Perceptron SVM / Generative model
+
+P17 Logic Regression 就是 linear外边套层sigmoid，变成0~1之间的概率
+
+step2 评判好坏没懂  question为什么逻辑回归不能用MSE loss？ discriminative or generative
+
+P18 如何改进模型/减小loss (public/private)test set   n-fold cross validation 鞍点与局部最小点
+
+P19 batch and momentum  总结：选用 medium batch 
+
+P20 动态learning rate Adagrad RMSprop Adam  
+Learning rate decay and Warm up
+
+P21
+
+P31 CNN 卷积 Receptive field  Padding  Feature map  Pooling 
+Data augmentation
+
+P32 Valid set => Overfitting => Selecting Loss(valid) is also a training
+
+P33 为什么Deep好: 参数少 更不容易overfitting
+
+P34 Spatial Transformer Layer 
+
+P38 self-attention  Word Embedding
+
+P40 Slot Filling RNN
+
+P41 RNNx2
+
+P42 GNN  How to train? 1.convolution 2.傅里叶  spatial-based GNN (NN4G  DCNN(隐藏层输出矩阵合并)/DGC(相加) MoNET GraphSAGE(LSTM) GAT GIN
+
+P43 spectral-based GNN
+
+P44 Embedding   Predicted-based   Word Embedding Document Embedding
+
+P48 batch normalization  Feature normalization
+
+P49 Transformer_encode  seq2seq  residual connection
+P50 Transformer_decode Autoregressive(AT) non-AT(NAT)[Multi-modality] Teacher Forcing
+Copy Mechanism   Guided Attention Beam search
+
+P51 Local Attention/Truncated A（只看两边的） Stride A(看左3和右3(hp)的) Global A (加个special token，要么原先的要么新的，只计算与special token有关的)  Clustering（聚类，使相似的在一起。不相似的认为点乘为0）  Sinkhorn sorting network(自己学习哪个要算)
+Reduce keys(Linformer)  Synthesizer
+
+P52 NAT Mask-predict    Insertion transformer 
+
+P53 Pointer Network
+
+
+
+P71 自监督学习
+P72 BEAT: transformer encoder 
+P73 BEAT x2
+P74 GPT
+
+P75 Pre-trained model
+P76 Beat Of 语音和影像： 1.Generative approaches: Mask,Predict  2.特有的： 图像旋转 内容预测（方向判断）3. Contrastive Learning 聚类？ 4.Bootstrapping approaches
+
+P114 RL  Trajectory
