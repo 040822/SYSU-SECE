@@ -1,5 +1,10 @@
-from scenario import Running_competition, table_hockey, football, wrestling, curling_competition, billiard_joint, billiard_competition
 import sys
+
+sys.path.append("Competition_IJCAI2023-main")
+
+
+from scenario import Running_competition, table_hockey, football, wrestling, curling_competition, billiard_joint, billiard_competition
+
 from pathlib import Path
 base_path = str(Path(__file__).resolve().parent.parent)
 sys.path.append(base_path)
