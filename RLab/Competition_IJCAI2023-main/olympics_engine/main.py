@@ -1,4 +1,5 @@
 import sys
+sys.path.append("Competition_IJCAI2023-main")
 from pathlib import Path
 base_path = str(Path(__file__).resolve().parent.parent)
 sys.path.append(base_path)
