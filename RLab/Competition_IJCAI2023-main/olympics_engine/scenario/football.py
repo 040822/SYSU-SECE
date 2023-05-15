@@ -1,3 +1,7 @@
+import sys
+
+sys.path.append("Competition_IJCAI2023-main")
+
 from olympics_engine.core import OlympicsBase
 from olympics_engine.viewer import Viewer, debug
 import pygame
