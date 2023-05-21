@@ -97,7 +97,7 @@ def main(args):
     else:
         model = PPO(run_dir)
         Transition = namedtuple('Transition', ['state', 'action', 'a_log_prob', 'reward', 'next_state', 'done'])
-
+        #具名元组
     opponent_agent = random_agent()     #we use random opponent agent here
 
     episode = 0
@@ -145,6 +145,7 @@ def main(args):
             if not args.load_model:
                 trans = Transition(obs_ctrl_agent, action_ctrl_raw, action_prob, post_reward[ctrl_agent_index],
                                    next_obs_ctrl_agent, done)
+                #['state', 'action', 'a_log_prob', 'reward', 'next_state', 'done']
                 model.store_transition(trans)
 
             obs_oppo_agent = next_obs_oppo_agent

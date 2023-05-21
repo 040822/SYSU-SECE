@@ -41,7 +41,7 @@ class PPO:
     action_space = args.action_space
     state_space = args.state_space
     lr = args.lr
-    use_cnn = False
+    use_cnn = True
 
     def __init__(self, run_dir=None):
         super(PPO, self).__init__()
