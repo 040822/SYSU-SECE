@@ -1,6 +1,7 @@
 import sys
 
 sys.path.append("Competition_IJCAI2023-main")
+sys.path.append(r"Competition_IJCAI2023-main/olympics_engine")
 
 
 from scenario import Running_competition, table_hockey, football, wrestling, curling_competition, billiard_joint, billiard_competition

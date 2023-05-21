@@ -10,12 +10,13 @@ from olympics_engine.agent import *
 import time
 
 from scenario import Running, table_hockey, football, wrestling, billiard, \
-    curling, billiard_joint, curling_long, curling_competition, Running_competition, billiard_competition, Seeks
+    curling, billiard_joint,curling_joint, curling_long, curling_competition, Running_competition, billiard_competition, Seeks
 
 from AI_olympics import AI_Olympics
 
 import random
 import json
+
 
 
 def store(record, name):
@@ -32,14 +33,18 @@ RENDER = True
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument('--map', default="seeks", type= str,
-                        help = 'running/table-hockey/football/wrestling/billiard/curling/all/all_v2')
+    parser.add_argument('--map', default="all_v2", type= str,
+                        help = 'running/table-hockey/football/wrestling/billiard/curling/all/all_v2')           
     parser.add_argument("--seed", default=1, type=int)
     args = parser.parse_args()
+    #argsparse是python的命令行解析的标准模块，内置于python，不需要安装。
+    #这个库可以让我们直接在命令行中就可以向程序中传入参数并让程序运行。
+    #type是要传入的参数的数据类型  help是该参数的提示信息
 
     for i in range(1):
         if 'all' not in args.map:
             Gamemap = create_scenario(args.map)
+            # generator.py/create_scenario
         #game = table_hockey(Gamemap)
         if args.map == 'running':
             game = Running(Gamemap)

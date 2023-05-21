@@ -67,3 +67,5 @@ P75 Pre-trained model
 P76 Beat Of 语音和影像： 1.Generative approaches: Mask,Predict  2.特有的： 图像旋转 内容预测（方向判断）3. Contrastive Learning 聚类？ 4.Bootstrapping approaches
 
 P114 RL  Trajectory
+P115
+P116

@@ -1,4 +1,7 @@
 # -*- coding:utf-8  -*-
+#测试用的，会输出log.json文件
+
+
 import os
 import time
 import json
@@ -6,7 +9,10 @@ import numpy as np
 import argparse
 import sys
 
-sys.path.append("./olympics_engine")
+import sys
+
+sys.path.append("Competition_IJCAI2023-main")
+sys.path.append(r"Competition_IJCAI2023-main/olympics_engine")
 
 from env.chooseenv import make
 from utils.get_logger import get_logger
