@@ -99,12 +99,12 @@ class CNN_Critic(nn.Module):
         self.linear1 = nn.Linear(512, 64)
         self.linear2 = nn.Linear(64, 1)
 
-    def forward(self, x):
+    def forward(self, x,index):
         
         
         #print(x)
         #x = x.unsqueeze(1)  # 在第1维上扩展一维，表示channel为1
-        x=x.reshape(1,1,40,40) 
+        x=x.reshape(index,1,40,40) 
         x = self.net(x)
 
         x = torch.relu(self.linear1(x))

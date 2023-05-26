@@ -28,8 +28,8 @@ from rl_trainer.algo.random import random_agent
 parser = argparse.ArgumentParser()
 parser.add_argument('--game_name', default="olympics-integrated", type=str)
 parser.add_argument('--algo', default="ppo", type=str, help="ppo/sac")
-parser.add_argument('--max_episodes', default=15, type=int)    #1500
-parser.add_argument('--episode_length', default=2, type=int)   #500
+parser.add_argument('--max_episodes', default=1500, type=int)    #1500
+parser.add_argument('--episode_length', default=500, type=int)   #500
 parser.add_argument('--map', default=1, type = int)
 
 parser.add_argument('--seed', default=1, type=int)
@@ -168,8 +168,9 @@ def main(args):
                 if not args.load_model:
                     if args.algo == 'ppo' and len(model.buffer) >= model.batch_size:
                         
-                        model.update(episode)           #model training
+                        
                         if win_is == 1:
+                            model.update(episode)           #model training
                             train_count += 1
                         else:
                             model.clear_buffer()
