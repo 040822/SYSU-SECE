@@ -2,6 +2,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from torch.distributions import Categorical
+import traceback
 
 class CNN_encoder(nn.Module):
     def __init__(self):
@@ -85,23 +86,27 @@ class CNN_Critic(nn.Module):
     def __init__(self, state_space, hidden_size = 64):
         super(CNN_Critic, self).__init__()
 
-        self.net = Net = nn.Sequential(
-            nn.Conv2d(in_channels = 8, out_channels=32, kernel_size = 4, stride = 2),
-            nn.BatchNorm2d(32),
-            nn.ReLU(inplace=True),
-            nn.MaxPool2d(2),
-            nn.Conv2d(in_channels = 32, out_channels=64, kernel_size = 3, stride = 1),
-            nn.BatchNorm2d(64),
-            nn.ReLU(inplace=True),
-            nn.MaxPool2d(kernel_size=2, stride=1),
+        self.net = nn.Sequential(
+            nn.Conv2d(1, 8, kernel_size=3, padding=1, stride=1),
+            nn.ReLU(),
+            nn.MaxPool2d(4, 2),
+            nn.Conv2d(8, 8, kernel_size=3, padding=1, stride=1),
+            nn.ReLU(),
+            nn.MaxPool2d(4,2),
             nn.Flatten()
         )
 
-        self.linear1 = nn.Linear(256, 64)
+        self.linear1 = nn.Linear(512, 64)
         self.linear2 = nn.Linear(64, 1)
 
     def forward(self, x):
+        
+        
+        #print(x)
+        #x = x.unsqueeze(1)  # 在第1维上扩展一维，表示channel为1
+        x=x.reshape(1,1,40,40) 
         x = self.net(x)
+
         x = torch.relu(self.linear1(x))
         x = self.linear2(x)
         return x

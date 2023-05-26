@@ -147,19 +147,20 @@ class PPO:
         # print("The agent is updateing....")
         for i in range(self.ppo_update_time):
             for index in BatchSampler(SubsetRandomSampler(range(len(self.buffer))), self.batch_size, False):
+                
                 # if self.training_step % 1000 == 0:
                 #     print('I_ep {} ，train {} times'.format(i_ep, self.training_step))
                 # with torch.no_grad():
-                Gt_index = Gt[index].view(-1, 1)
-                #Tensor.view 调整tensor的维度. -1代表自动调整
 
-                V = self.critic_net(state[index].squeeze(1))
-                # V为一个数字而非数组
-                delta = Gt_index - V
-                advantage = delta.detach()
-                #使这个东西不具有梯度,advantage不需要梯度
-                # n-step advantage = y^l*r(t+l).sum(l=0)-V(s t)
-                # GAE advanntage = ([y*lambda]^l*delta(t+l)).sum(l=0)
+                Gt_index = Gt[index].view(-1, 1)       #Tensor.view 调整tensor的维度. -1代表自动调整
+                # V = self.critic_net(state[index].squeeze(1))    #index为一个含有三十二个元素的东东，V为一个数字而非数组
+                #delta = Gt_index - V
+                #advantage = delta.detach()     #使这个东西不具有梯度,advantage不需要梯度
+                
+                # n-step advantage = y^l*r(t+l).sum(l=0)-V(s t)        公式，源代码实现的
+                # GAE advanntage = ([y*lambda]^l*delta(t+l)).sum(l=0)   
+                
+                advantage = advantage_GAE
 
                 # epoch iteration, PPO core!!!
                 action_prob = self.actor_net(state[index].squeeze(1)).gather(1, action[index])  # new policy
