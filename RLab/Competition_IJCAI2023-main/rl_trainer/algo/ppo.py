@@ -32,6 +32,7 @@ class Args:
     # action_space = 3
     state_space = 1600
     use_grad_clip=True
+    use_cnn = False
 
 args = Args()
 device = 'cpu'
@@ -46,7 +47,7 @@ class PPO:
     action_space = args.action_space
     state_space = args.state_space
     lr = args.lr
-    use_cnn = True
+    use_cnn = args.use_cnn
     weight_decay_actor = args.weight_decay_actor
     weight_decay_critic = args.weight_decay_critic
     use_grad_clip = args.use_grad_clip
@@ -210,14 +211,3 @@ class PPO:
             print("Model loaded!")
         else:
             sys.exit(f'Model not founded!')
-
-    def lr_decay(self, total_steps):
-        lr_a_now = self.lr_a * (1 - total_steps / self.max_train_steps)
-        lr_c_now = self.lr_c * (1 - total_steps / self.max_train_steps)
-        for p in self.optimizer_actor.param_groups:
-            p['lr'] = lr_a_now
-        for p in self.optimizer_critic.param_groups:
-            p['lr'] = lr_c_now
-
-
-

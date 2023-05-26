@@ -109,6 +109,10 @@ def main(args):
         if RENDER:
             env.env_core.render()
         obs_ctrl_agent = np.array(state[ctrl_agent_index]['obs']['agent_obs']).flatten()
+        #obs_ctrl_agent = obs_ctrl_agent.reshape(1,40,40)
+        #print(obs_ctrl_agent)
+
+
         NEW_GAME_flag = state[ctrl_agent_index]['obs']['game_mode']
         obs_oppo_agent = np.array(state[1-ctrl_agent_index]['obs']['agent_obs'])   #[25,25]
 

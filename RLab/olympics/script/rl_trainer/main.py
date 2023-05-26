@@ -28,8 +28,8 @@ from rl_trainer.algo.random import random_agent
 parser = argparse.ArgumentParser()
 parser.add_argument('--game_name', default="olympics-integrated", type=str)
 parser.add_argument('--algo', default="ppo", type=str, help="ppo/sac")
-parser.add_argument('--max_episodes', default=1500, type=int)
-parser.add_argument('--episode_length', default=500, type=int)
+parser.add_argument('--max_episodes', default=15, type=int)    #1500
+parser.add_argument('--episode_length', default=2, type=int)   #500
 parser.add_argument('--map', default=1, type = int)
 
 parser.add_argument('--seed', default=1, type=int)
@@ -42,8 +42,8 @@ parser.add_argument("--load_run", default=2, type=int)
 parser.add_argument("--load_episode", default=900, type=int)
 
 
-device = 'cpu'
-RENDER = True
+device = 'cuda'
+RENDER = False
 actions_map = {0: [-100, -30], 1: [-100, -18], 2: [-100, -6], 3: [-100, 6], 4: [-100, 18], 5: [-100, 30], 6: [-40, -30],
                7: [-40, -18], 8: [-40, -6], 9: [-40, 6], 10: [-40, 18], 11: [-40, 30], 12: [20, -30], 13: [20, -18],
                14: [20, -6], 15: [20, 6], 16: [20, 18], 17: [20, 30], 18: [80, -30], 19: [80, -18], 20: [80, -6],
@@ -108,7 +108,8 @@ def main(args):
         state = env.reset()
         if RENDER:
             env.env_core.render()
-        obs_ctrl_agent = np.array(state[ctrl_agent_index]['obs']['agent_obs']).flatten()
+        # obs_ctrl_agent = np.array(state[ctrl_agent_index]['obs']['agent_obs']).flatten()
+        obs_ctrl_agent = np.array(state[ctrl_agent_index]['obs']['agent_obs'])
         NEW_GAME_flag = state[ctrl_agent_index]['obs']['game_mode']
         obs_oppo_agent = np.array(state[1-ctrl_agent_index]['obs']['agent_obs'])   #[25,25]
 
@@ -129,7 +130,8 @@ def main(args):
 
             next_state, reward, done, _, info = env.step(action)
 
-            next_obs_ctrl_agent = np.array(next_state[ctrl_agent_index]['obs']['agent_obs']).flatten()
+            # next_obs_ctrl_agent = np.array(next_state[ctrl_agent_index]['obs']['agent_obs']).flatten()
+            next_obs_ctrl_agent = np.array(next_state[ctrl_agent_index]['obs']['agent_obs'])
             next_obs_oppo_agent = next_state[1-ctrl_agent_index]['obs']
 
             step += 1
@@ -147,8 +149,9 @@ def main(args):
                                    next_obs_ctrl_agent, done)
                 model.store_transition(trans)
 
+
             obs_oppo_agent = next_obs_oppo_agent
-            obs_ctrl_agent = np.array(next_obs_ctrl_agent).flatten()
+            obs_ctrl_agent = next_obs_ctrl_agent
             if RENDER:
                 env.env_core.render()
             Gt += reward[ctrl_agent_index] if done else -1
@@ -164,8 +167,9 @@ def main(args):
 
                 if not args.load_model:
                     if args.algo == 'ppo' and len(model.buffer) >= model.batch_size:
+                        
+                        model.update(episode)           #model training
                         if win_is == 1:
-                            model.update(episode)           #model training
                             train_count += 1
                         else:
                             model.clear_buffer()

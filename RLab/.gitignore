@@ -1,3 +1,6 @@
 # Default ignored files
 其他资料/*
 papers/*
+olympics/*
+Competition_IJCAI2023-main/rl_trainer/models/*
+baselines-master/*

@@ -18,6 +18,7 @@ class CNN_encoder(nn.Module):
 
     def forward(self, view_state):
         # [batch, 128]
+        view_state=view_state.reshape(1,40,40)
         print("view_state",view_state)
         print(type(view_state))
         x = self.net(view_state)
@@ -66,7 +67,7 @@ class CNN_Actor(nn.Module):
         # self.conv2 = nn.Conv2d(in_channels = 32, out_channels=64, kernel_size = 3, stride = 1)
         # self.flatten = nn.Flatten()
         self.net = Net = nn.Sequential(
-            nn.Conv2d(in_channels = 2, out_channels=32, kernel_size = 4, stride = 2),
+            nn.Conv2d(in_channels = 1, out_channels=32, kernel_size = 4, stride = 2),
             nn.BatchNorm2d(32),
             nn.Tanh(  ),
             #nn.ReLU(  ),
@@ -78,12 +79,14 @@ class CNN_Actor(nn.Module):
             nn.Flatten()
         )
 
-        self.linear1 = nn.Linear(256, 64)
+        self.linear1 = nn.Linear(2304, 64)
+        #256=》64
         self.linear2 = nn.Linear(64, action_space)
 
     def forward(self, x):
-        print("view_state",x)
-        print(x.size())
+        x=x.reshape(1,1,40,40)
+        #print("view_state",x)
+        #print(x.size())
         x = self.net(x)
         #torch.Size([1, 1600])
         x = F.relu(self.linear1(x))
@@ -110,6 +113,7 @@ class CNN_Critic(nn.Module):
         self.linear2 = nn.Linear(64, 1)
 
     def forward(self, x):
+        x=x.reshape(1,40,40)
         x = self.net(x)
         x = F.relu(self.linear1(x))
         x = self.linear2(x)
@@ -136,6 +140,7 @@ class CNN_CategoricalActor(nn.Module):
         self.linear2 = nn.Linear(hidden_size, action_space)
 
     def forward(self, x):
+        x=x.reshape(1,40,40)
         x = self.net(x)
         x = F.relu(self.linear1(x))
         action_prob = F.softmax(self.linear2(x), dim = -1)
@@ -162,6 +167,7 @@ class CNN_Critic2(nn.Module):
         self.linear2 = nn.Linear(hidden_size, action_space)
 
     def forward(self, x):
+        x=x.reshape(1,40,40)
         x = self.net(x)
         x = F.relu(self.linear1(x))
         return self.linear2(x)
