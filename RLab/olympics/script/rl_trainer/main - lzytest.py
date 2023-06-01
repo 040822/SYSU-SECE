@@ -22,15 +22,14 @@ from collections import deque, namedtuple
 from env.chooseenv import make
 from rl_trainer.log_path import *
 from rl_trainer.algo.ppo import PPO
-from rl_trainer.algo.normalization import Normalization,RewardScaling
 from rl_trainer.algo.random import random_agent
 
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--game_name', default="olympics-integrated", type=str)
 parser.add_argument('--algo', default="ppo", type=str, help="ppo/sac")
-parser.add_argument('--max_episodes', default=1500, type=int)    #1500
-parser.add_argument('--episode_length', default=5, type=int)   #500
+parser.add_argument('--max_episodes', default=1000, type=int)
+parser.add_argument('--episode_length', default=1500, type=int)
 parser.add_argument('--map', default=1, type = int)
 
 parser.add_argument('--seed', default=1, type=int)
@@ -38,42 +37,32 @@ parser.add_argument('--seed', default=1, type=int)
 parser.add_argument("--save_interval", default=100, type=int)
 parser.add_argument("--model_episode", default=0, type=int)
 
-parser.add_argument("--load_model", action='store_true')
+#是否去加载模型
+parser.add_argument("--use_model", default=0, action='store_true')
+#是否训练 0训练，1不训
+parser.add_argument("--load_model",default=0,action='store_true')
+
 parser.add_argument("--load_run", default=2, type=int)
-parser.add_argument("--load_episode", default=900, type=int)
-
-# PPO优化中用到的参数
-parser.add_argument("--use_adv_norm", type=bool, default=True, help="Trick 1:advantage normalization")
-parser.add_argument("--use_state_norm", type=bool, default=True, help="Trick 2:state normalization")
-parser.add_argument("--use_reward_norm", type=bool, default=False, help="Trick 3:reward normalization")
-parser.add_argument("--use_reward_scaling", type=bool, default=True, help="Trick 4:reward scaling")
-parser.add_argument("--entropy_coef", type=float, default=0.01, help="Trick 5: policy entropy")
-parser.add_argument("--use_lr_decay", type=bool, default=True, help="Trick 6:learning rate Decay")
-parser.add_argument("--use_grad_clip", type=bool, default=True, help="Trick 7: Gradient clip")
-parser.add_argument("--use_orthogonal_init", type=bool, default=True, help="Trick 8: orthogonal initialization")
-parser.add_argument("--set_adam_eps", type=float, default=True, help="Trick 9: set Adam epsilon=1e-5")
-parser.add_argument("--use_tanh", type=float, default=True, help="Trick 10: tanh activation function")
-parser.add_argument("--reward_gamma", type=float, default=0.99, help="Discount factor")
-
+parser.add_argument("--load_episode", default=2000, type=int)
+parser.add_argument("--model_gamename",default="runningX",type=str)
 
 device = 'cuda'
-RENDER = False
+RENDER = True
 actions_map = {0: [-100, -30], 1: [-100, -18], 2: [-100, -6], 3: [-100, 6], 4: [-100, 18], 5: [-100, 30], 6: [-40, -30],
                7: [-40, -18], 8: [-40, -6], 9: [-40, 6], 10: [-40, 18], 11: [-40, 30], 12: [20, -30], 13: [20, -18],
                14: [20, -6], 15: [20, 6], 16: [20, 18], 17: [20, 30], 18: [80, -30], 19: [80, -18], 20: [80, -6],
                21: [80, 6], 22: [80, 18], 23: [80, 30], 24: [140, -30], 25: [140, -18], 26: [140, -6], 27: [140, 6],
                28: [140, 18], 29: [140, 30], 30: [200, -30], 31: [200, -18], 32: [200, -6], 33: [200, 6], 34: [200, 18],
                35: [200, 30]}           #dicretise action space
-
+ctrls=True
 
 def main(args):
     print("==algo: ", args.algo)
     print(f'device: {device}')
-    print(f'model episode: {args.model_episode}')
+    #print(f'model episode: {args.model_episode}')
     print(f'save interval: {args.save_interval}')
 
     env = make(args.game_name)          #build environment
-
 
     num_agents = env.n_player
     print(f'Total agent number: {num_agents}')
@@ -95,7 +84,9 @@ def main(args):
 
     torch.manual_seed(args.seed)
     # define checkpoint path
-    run_dir, log_dir = make_logpath(args.game_name, args.algo)
+    run_dir, log_dir = make_logpath(args.model_gamename, args.algo)
+
+    
     if not args.load_model:
         writer = SummaryWriter(os.path.join(str(log_dir), "{}_{} on olympics-integrated".format(
             datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S"),args.algo)))
@@ -103,31 +94,24 @@ def main(args):
 
     record_win = deque(maxlen=100)
     record_win_op = deque(maxlen=100)
-
-    if args.load_model:         #setup algos
+    episode = 0
+    if args.use_model:         #setup algos
         model = PPO()
         load_dir = os.path.join(os.path.dirname(run_dir), "run" + str(args.load_run))
         model.load(load_dir,episode=args.load_episode)
     else:
         model = PPO(run_dir)
-        Transition = namedtuple('Transition', ['state', 'action', 'a_log_prob', 'reward', 'next_state', 'done'])
+
+    Transition = namedtuple('Transition', ['state', 'action', 'a_log_prob', 'reward', 'next_state', 'done'])
 
     opponent_agent = random_agent()     #we use random opponent agent here
 
-    episode = 0
-    train_count = 0
-    state_norm = Normalization(shape=[40,40])  # Trick 2:state normalization
-    if args.use_reward_norm:  # Trick 3:reward normalization
-        reward_norm = Normalization(shape=1)
-    elif args.use_reward_scaling:  # Trick 4:reward scaling
-        reward_scaling = RewardScaling(shape=1, gamma=args.reward_gamma)
-
-
     
+    train_count = 0
+    #print(episode , args.max_episodes)
     while episode < args.max_episodes:
         env = make(args.game_name)          #rebuild each time to shuffle the running map
         state = env.reset()
-        
         if RENDER:
             env.env_core.render()
         # obs_ctrl_agent = np.array(state[ctrl_agent_index]['obs']['agent_obs']).flatten()
@@ -135,24 +119,22 @@ def main(args):
         NEW_GAME_flag = state[ctrl_agent_index]['obs']['game_mode']
         obs_oppo_agent = np.array(state[1-ctrl_agent_index]['obs']['agent_obs'])   #[25,25]
 
-        if args.use_reward_scaling:
-            reward_scaling.reset() #每一个episode初始化一次
-        if args.use_state_norm:
-            obs_ctrl_agent = state_norm(obs_ctrl_agent)# Trick 2:state normalization
-
         episode += 1
         step = 0
         Gt = 0
 
         while True:
             action_opponent = opponent_agent.act(obs_oppo_agent)        #opponent action
-            action_opponent = [[0],[0]]  #here we assume the opponent is not moving in the demo
+            # action_opponent = [[0],[0]]  #设定敌人不动！
 
             action_ctrl_raw, action_prob= model.select_action(obs_ctrl_agent, False if args.load_model else True)
                             #inference
             action_ctrl = actions_map[action_ctrl_raw]
             action_ctrl = [[action_ctrl[0]], [action_ctrl[1]]]        #wrapping up the action
-
+            if (ctrls):
+                print(action_ctrl)
+                print(type(action_ctrl))
+                
             action = [action_opponent, action_ctrl] if ctrl_agent_index == 1 else [action_ctrl, action_opponent]
 
             next_state, reward, done, _, info = env.step(action)
@@ -160,13 +142,6 @@ def main(args):
             # next_obs_ctrl_agent = np.array(next_state[ctrl_agent_index]['obs']['agent_obs']).flatten()
             next_obs_ctrl_agent = np.array(next_state[ctrl_agent_index]['obs']['agent_obs'])
             next_obs_oppo_agent = next_state[1-ctrl_agent_index]['obs']
-
-            if args.use_reward_norm:
-                reward = reward_norm(reward)
-            elif args.use_reward_scaling:
-                reward = reward_scaling(reward)
-            if args.use_state_norm:
-                next_obs_ctrl_agent = state_norm(next_obs_ctrl_agent)# Trick 2:state normalization
 
             step += 1
 
@@ -182,7 +157,6 @@ def main(args):
                 trans = Transition(obs_ctrl_agent, action_ctrl_raw, action_prob, post_reward[ctrl_agent_index],
                                    next_obs_ctrl_agent, done)
                 model.store_transition(trans)
-
 
             obs_oppo_agent = next_obs_oppo_agent
             obs_ctrl_agent = next_obs_ctrl_agent
@@ -201,8 +175,6 @@ def main(args):
 
                 if not args.load_model:
                     if args.algo == 'ppo' and len(model.buffer) >= model.batch_size:
-                        
-                        #model.update(episode)           #model training
                         if win_is == 1:
                             model.update(episode)           #model training
                             train_count += 1

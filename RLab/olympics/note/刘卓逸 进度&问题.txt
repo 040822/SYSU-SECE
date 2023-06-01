@@ -1,0 +1,9 @@
+> 如何训练单个游戏
+将AI_olympics.py中的game_pool删剩想玩的游戏即可，但是！！！示例代码就挺脑缠的，他是模型吐出一个数，然后去action map中拿对应编号的动作，使得灵活性、可操作性约等于无，可能是为了卡偷懒的人罢，需要修改rl_trainer重新train
+
+> 如何在rl_trainer中load模型
+先增加一个use_model的参数,然后将main中的一个if load_model 改成if use_model，并且把else中的transition移出if即可,if not load_model都别动，因为这是“是否训练迭代”的开关
+
+> 如何带模型地提交
+agent/submission中有我写的示例，能通过run_log.py(只要跑过这个线上服务器就是ok的，readme如此说道)，但是！！！线上有出入！一是把obs_list['obs']['agent_obs']直接移到了obs_list['obs'],二是观测矩阵的维度与本地提供的环境似乎有出入，有待研究
+

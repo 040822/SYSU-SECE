@@ -4,6 +4,10 @@ import torch.nn.functional as F
 from torch.distributions import Categorical
 import traceback
 
+def orthogonal_init(layer, gain=1.0):
+    nn.init.orthogonal_(layer.weight, gain=gain)
+    nn.init.constant_(layer.bias, 0)
+
 class CNN_encoder(nn.Module):
     def __init__(self):
         super(CNN_encoder, self).__init__()
@@ -19,7 +23,7 @@ class CNN_encoder(nn.Module):
 
     def forward(self, view_state):
         # [batch, 128]
-        view_state = view_state.unsqueeze(1)  # 在第1维上扩展一维，表示channel为1
+        #view_state = view_state.unsqueeze(1)  # 在第1维上扩展一维，表示channel为1
         x = self.net(view_state)
         return x
 
@@ -34,13 +38,17 @@ class Actor(nn.Module):
             self.encoder = CNN_encoder().to(device)
             state_space = 512
         self.linear_in = nn.Linear(state_space, hidden_size)
+        # 512=>64
         self.action_head = nn.Linear(hidden_size, action_space)
+        # 64=>action_space
 
     def forward(self, x):
+        x = x.unsqueeze(1)  # 在第1维上扩展一维，表示channel为1
         if self.is_cnn:
             x = self.encoder(x)
         x = F.relu(self.linear_in(x))
         action_prob = F.softmax(self.action_head(x), dim=1)
+        #action_prob = F.softmax(self.action_head(x), dim=-1)
         return action_prob
 
 
@@ -52,114 +60,25 @@ class Critic(nn.Module):
             self.encoder = CNN_encoder().to(device)  # 用GPU计算
             state_space = 512
         self.linear_in = nn.Linear(state_space, hidden_size)
+        # 512=>64
         self.state_value = nn.Linear(hidden_size, 1)
+        # 64=>1
 
-    def forward(self, x):
+    def forward(self, x,batch_size):
+        #x = x.unsqueeze(1)  # 在第1维上扩展一维，表示channel为1 会出现[40,1,40]的情况,故弃用.
+        x=x.reshape(batch_size,1,40,40)  #batch_size代表输入的帧数
         if self.is_cnn:
             x = self.encoder(x)
         x = F.relu(self.linear_in(x))
         value = self.state_value(x)
         return value
-
-class CNN_Actor(nn.Module):
-    def __init__(self, state_space, action_space, hidden_size = 64):
-        super(CNN_Actor, self).__init__()
-
-        # self.conv1 = nn.Conv2d(in_channels = 8, out_channels=32, kernel_size = 4, stride = 2)
-        # self.conv2 = nn.Conv2d(in_channels = 32, out_channels=64, kernel_size = 3, stride = 1)
-        # self.flatten = nn.Flatten()
-        self.net = CNN_encoder().to(device)
-            # 原代码出现和最初cnn部分一样的问题，这里直接使用cnn_encoder的架构
-        
-
-        self.linear1 = nn.Linear(512, 64)
-        self.linear2 = nn.Linear(64, action_space)
-
-    def forward(self, x):
-        #x = x.unsqueeze(1)   在第1维上扩展一维，表示channel为1
-        x = self.net(x)
-        x = torch.relu(self.linear1(x))
-        action_prob = F.softmax(self.linear2(x), dim = -1)
-        return action_prob
-
-class CNN_Critic(nn.Module):
-    def __init__(self, state_space, hidden_size = 64):
-        super(CNN_Critic, self).__init__()
-
-        self.net = nn.Sequential(
-            nn.Conv2d(1, 8, kernel_size=3, padding=1, stride=1),
-            nn.ReLU(),
-            nn.MaxPool2d(4, 2),
-            nn.Conv2d(8, 8, kernel_size=3, padding=1, stride=1),
-            nn.ReLU(),
-            nn.MaxPool2d(4,2),
-            nn.Flatten()
-        )
-
-        self.linear1 = nn.Linear(512, 64)
-        self.linear2 = nn.Linear(64, 1)
-
-    def forward(self, x,index):
-        
-        
-        #print(x)
-        #x = x.unsqueeze(1)  # 在第1维上扩展一维，表示channel为1
-        x=x.reshape(index,1,40,40) 
-        x = self.net(x)
-
-        x = torch.relu(self.linear1(x))
-        x = self.linear2(x)
-        return x
+        #[2602,1]
 
 
-class CNN_CategoricalActor(nn.Module):
-    def __init__(self, state_space, action_space, hidden_size = 64):
-        super(CNN_CategoricalActor, self).__init__()
-        self.net = nn.Sequential(
-            nn.Conv2d(in_channels = 8, out_channels=32, kernel_size = 4, stride = 2),
-            nn.BatchNorm2d(32),
-            nn.ReLU(inplace=True),
-            nn.MaxPool2d(2),
-            nn.Conv2d(in_channels = 32, out_channels=32, kernel_size = 3, stride = 1),
-            nn.BatchNorm2d(32),
-            nn.ReLU(inplace=True),
-            nn.MaxPool2d(kernel_size=2, stride=1),
-            nn.Flatten()
-        )
 
-        self.linear1 = nn.Linear(128, hidden_size)
-        self.linear2 = nn.Linear(hidden_size, action_space)
 
-    def forward(self, x):
-        x = self.net(x)
-        x = F.relu(self.linear1(x))
-        action_prob = F.softmax(self.linear2(x), dim = -1)
-        c = Categorical(action_prob)
-        sampled_action = c.sample()
-        greedy_action = torch.argmax(action_prob)
-        return sampled_action, action_prob, greedy_action
 
-class CNN_Critic2(nn.Module):
-    def __init__(self, state_space, action_space, hidden_size=64):
-        super(CNN_Critic2, self).__init__()
-        self.net = nn.Sequential(
-            nn.Conv2d(in_channels = 8, out_channels=32, kernel_size = 4, stride = 2),
-            nn.BatchNorm2d(32),
-            nn.ReLU(inplace=True),
-            nn.MaxPool2d(2),
-            nn.Conv2d(in_channels = 32, out_channels=32, kernel_size = 3, stride = 1),
-            nn.BatchNorm2d(32),
-            nn.ReLU(inplace=True),
-            nn.MaxPool2d(kernel_size=2, stride=1),
-            nn.Flatten()
-        )
-        self.linear1 = nn.Linear(128, hidden_size)
-        self.linear2 = nn.Linear(hidden_size, action_space)
 
-    def forward(self, x):
-        x = self.net(x)
-        x = F.relu(self.linear1(x))
-        return self.linear2(x)
 
 
 

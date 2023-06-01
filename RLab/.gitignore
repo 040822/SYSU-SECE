@@ -5,3 +5,4 @@ olympics/.svn/*
 olympics/script/rl_trainer/models/*
 Competition_IJCAI2023-main/rl_trainer/models/*
 baselines-master/*
+DRL-code-pytorch-main/*
