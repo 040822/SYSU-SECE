@@ -38,9 +38,10 @@ parser.add_argument('--seed', default=1, type=int)
 parser.add_argument("--save_interval", default=100, type=int)
 parser.add_argument("--model_episode", default=0, type=int)
 
-parser.add_argument("--load_model", action='store_true')
-parser.add_argument("--load_run", default=2, type=int)
-parser.add_argument("--load_episode", default=900, type=int)
+parser.add_argument("--use_model",default=0) #1 开始时加载模型， 0 不加载开新模型
+parser.add_argument("--load_model", default=0, action='store_true') #0是训练，1是不训
+parser.add_argument("--load_run", default=14, type=int)
+parser.add_argument("--load_episode", default=1500, type=int)
 
 # PPO优化中用到的参数
 parser.add_argument("--use_adv_norm", type=bool, default=True, help="Trick 1:advantage normalization")
@@ -56,15 +57,12 @@ parser.add_argument("--use_tanh", type=float, default=True, help="Trick 10: tanh
 parser.add_argument("--reward_gamma", type=float, default=0.99, help="Discount factor")
 
 
-device = 'cuda'
+device = 'cpu'
 RENDER = False
-actions_map = {0: [-100, -30], 1: [-100, -18], 2: [-100, -6], 3: [-100, 6], 4: [-100, 18], 5: [-100, 30], 6: [-40, -30],
-               7: [-40, -18], 8: [-40, -6], 9: [-40, 6], 10: [-40, 18], 11: [-40, 30], 12: [20, -30], 13: [20, -18],
-               14: [20, -6], 15: [20, 6], 16: [20, 18], 17: [20, 30], 18: [80, -30], 19: [80, -18], 20: [80, -6],
-               21: [80, 6], 22: [80, 18], 23: [80, 30], 24: [140, -30], 25: [140, -18], 26: [140, -6], 27: [140, 6],
-               28: [140, 18], 29: [140, 30], 30: [200, -30], 31: [200, -18], 32: [200, -6], 33: [200, 6], 34: [200, 18],
-               35: [200, 30]}           #dicretise action space
 
+speed = [-100,-40,20,60,80,140,200]
+angle = [-30,-20,-10,-5, 0, 5, 10, 20, 30]
+actions_map=[[i,j] for i in speed for j in angle]
 
 def main(args):
     print("==algo: ", args.algo)
@@ -105,12 +103,13 @@ def main(args):
     record_win_op = deque(maxlen=100)
 
     if args.load_model:         #setup algos
-        model = PPO()
+        model = PPO(max_train_steps=args.max_episodes)
         load_dir = os.path.join(os.path.dirname(run_dir), "run" + str(args.load_run))
         model.load(load_dir,episode=args.load_episode)
     else:
-        model = PPO(run_dir)
-        Transition = namedtuple('Transition', ['state', 'action', 'a_log_prob', 'reward', 'next_state', 'done'])
+        model = PPO(run_dir,max_train_steps=args.max_episodes)
+    
+    Transition = namedtuple('Transition', ['state', 'action', 'a_log_prob', 'reward', 'next_state', 'done'])
 
     opponent_agent = random_agent()     #we use random opponent agent here
 
@@ -152,7 +151,7 @@ def main(args):
                             #inference
             action_ctrl = actions_map[action_ctrl_raw]
             action_ctrl = [[action_ctrl[0]], [action_ctrl[1]]]        #wrapping up the action
-
+            #print(action_ctrl)
             action = [action_opponent, action_ctrl] if ctrl_agent_index == 1 else [action_ctrl, action_opponent]
 
             next_state, reward, done, _, info = env.step(action)

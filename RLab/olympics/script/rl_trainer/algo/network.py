@@ -13,10 +13,12 @@ class CNN_encoder(nn.Module):
         super(CNN_encoder, self).__init__()
         self.net = nn.Sequential(
             nn.Conv2d(1, 8, kernel_size=3, padding=1, stride=1),
-            nn.ReLU(),
+            #nn.ReLU(),
+            nn.Tanh(),
             nn.MaxPool2d(4, 2),
             nn.Conv2d(8, 8, kernel_size=3, padding=1, stride=1),
-            nn.ReLU(),
+            #nn.ReLU(),
+            nn.Tanh(),
             nn.MaxPool2d(4,2),
             nn.Flatten()
         )
@@ -41,12 +43,18 @@ class Actor(nn.Module):
         # 512=>64
         self.action_head = nn.Linear(hidden_size, action_space)
         # 64=>action_space
+        
+        
+        orthogonal_init(self.linear_in)
+        orthogonal_init(self.action_head,gain=0.01)
+
 
     def forward(self, x):
-        x = x.unsqueeze(1)  # 在第1维上扩展一维，表示channel为1
+        size = x.size()[0]          #size为输入的x的第一维，输入为[size,40,40]
+        x=x.reshape(size,1,40,40)  #size代表输入的帧数
         if self.is_cnn:
             x = self.encoder(x)
-        x = F.relu(self.linear_in(x))
+        x = torch.tanh(self.linear_in(x))
         action_prob = F.softmax(self.action_head(x), dim=1)
         #action_prob = F.softmax(self.action_head(x), dim=-1)
         return action_prob
@@ -64,15 +72,21 @@ class Critic(nn.Module):
         self.state_value = nn.Linear(hidden_size, 1)
         # 64=>1
 
-    def forward(self, x,batch_size):
+        orthogonal_init(self.linear_in)
+        orthogonal_init(self.state_value)
+
+    def forward(self, x):
         #x = x.unsqueeze(1)  # 在第1维上扩展一维，表示channel为1 会出现[40,1,40]的情况,故弃用.
-        x=x.reshape(batch_size,1,40,40)  #batch_size代表输入的帧数
+        size = x.size()[0]          #size为输入的x的第一维，输入为[size,40,40]
+        x=x.reshape(size,1,40,40)  #size代表输入的帧数
+
         if self.is_cnn:
             x = self.encoder(x)
-        x = F.relu(self.linear_in(x))
+        x = torch.tanh(self.linear_in(x))
         value = self.state_value(x)
         return value
         #[2602,1]
+        #[2881,1]
 
 
 

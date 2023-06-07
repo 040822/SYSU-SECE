@@ -9,7 +9,7 @@ from olympics_engine.agent import *
 import time
 
 from scenario import Running, table_hockey, football, wrestling, billiard, \
-    curling, billiard_joint, curling_long, curling_competition, Running_competition, billiard_competition, Seeks
+    curling, billiard_joint, curling_long, curling_competition, Running_competition, billiard_competition, Seeks,curling_joint
 
 from AI_olympics import AI_Olympics
 

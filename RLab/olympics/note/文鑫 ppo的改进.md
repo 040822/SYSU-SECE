@@ -1,22 +1,7 @@
 # ppo的改进措施
 
 参考链接:<https://zhuanlan.zhihu.com/p/512327050>  
-  
 
-## 已完成部分    
-- Trick 1—Advantage Normalization  
-- Trick 2—State Normalization
-- Trick 3 & Trick 4—— Reward Normalization & Reward Scaling
-- 
-- Trick 6 Learning Rate Decay  
-  使用adam优化器内置操作  
-- Trick 7 Gradient clip
-  原始代码已有
-- Trick 9 Adam Optimizer Epsilon Parameter  
-  已将a和c的adam优化器参数均改为eps=1e-5s
-- Trick10 Tanh Activation Function  
-  已将network.py中所有ReLU换成Tanh  
-  出现问题
 
 #
 
@@ -105,17 +90,58 @@ PPO的理论和实现要比上边的算法简单很多（什么KL什么信任域
 ## Trick  
 - Trick 1—Advantage Normalization  
   分为两种，第一种是batch adv norm，对advantage作如下的Normalization
-  $ advantage_GAE = ((advantage_GAE - advantage_GAE.mean()) / (advantage_GAE.std() + 1e-5)) $   
+  $advantage_GAE = ((advantage_GAE - advantage_GAE.mean()) / (advantage_GAE.std() + 1e-5))  
   第二种是minibatch adv norm，仅对大batch中的一个小batch（minibatch）做normalization，效果相对第一种会变差，故采用第一种
   
 - Trick 2—State Normalization
-  核心为两块，一块是对state做normalization，一块是动态计算一组state的mean和std，减少计算量（即用n个state的mean和std和一个新的state，计算n+1个state的mean和std）
-  公式后补《待办》
+  核心为两块，一块是对state做normalization，一块是动态计算一组state的mean和std，减少计算量（即用n个state的mean和std和一个新的state，计算n+1个state的mean和std）  
+  $\overline{x'} *n =(n-1)*\overline{x}+x'$  
+  $\overline{x'} =((n-1)*\overline{x}+x')/n$  
+    
+  $s^{2'} = s^2 +(x-\overline{x'})+(x- \overline{x})$
 
-- Trick 3 & Trick 4—— Reward Normalization & Reward Scaling
-  调整reward，防止reward过大或过小影响训练
-  Reward Normalization和State Normalization算法一致，并且通过同一个类实现
-  Reward Scaling是先计算accumulate decay Reward，然后再把它除以std
+
+- Trick 3 & Trick 4—— Reward Normalization & Reward Scaling  
+  调整reward，防止reward过大或过小影响训练  
+  Reward Normalization和State Normalization算法一致，并且通过同一个类实现  
+  Reward Scaling是先计算accumulate decay Reward，然后再把它除以std  
   按照作者的说法，Reward Scaling效果很好，且使用Reward Scaling的同时使用Reward Normalization会导致问题，故仅采用Reward Scaling
 
-- Trick 5—Policy Entropy
+- Trick 5—Policy Entropy  
+  对actor的输出求熵，并在actor_loss中加上这个熵。  
+  $H = -\Sigma_{a_t} \pi(a_t|s_t)*log(\pi(a_t|s_t))$  
+  ` policy_entropy = -sum([action_prob[i] * torch.log(action_prob[i]) for i in range(len(action_prob))])`  
+  `action_loss = -torch.min(surr1, surr2).mean()  - self.entropy_coef * policy_entropy`
+   
+
+- Trick 6—Learning Rate Decay  
+  学习率衰减  
+  `lr = lr * (1 - total_steps / max_train_steps)`
+
+- Trick 7-Gradient clip   
+  梯度裁剪，在pytorch中有内置的方法实现
+ `torch.nn.utils.clip_grad_norm_(self.actor.parameters(), 0.5) `  
+ 这一方法的原理是，将所有的梯度乘以一个clip_coef,其中：  
+ $cip_coef = \frac{max-norm}{total-norm}$  
+ max_norm是函数的第二个参数（0.5），total_norm是所有梯度的L2 norm（或者说是梯度向量的长度）  
+   
+- Trick 8—Orthogonal Initialization   
+  完全没看懂  
+    
+    正交初始化（Orthogonal Initialization）是为了防止在训练开始时出现梯度消失、梯度爆炸等问题所提出的一种神经网络初始化方式。具体的方法分为两步：
+
+  （1）用均值为0，标准差为1的高斯分布初始化权重矩阵，
+
+  （2）对这个权重矩阵进行奇异值分解，得到两个正交矩阵，取其中之一作为该层神经网络的权重矩阵。
+
+  使用正交初始化的Actor和Critic实现如下面的代码所示：
+
+  注：
+1. 我们一般在初始化actor网络的输出层时，会把gain设置成0.01，actor网络的其他层和critic网络都使用Pytorch中正交初始化默认的gain=1.0。
+2. 在我们的实现中，actor网络的输出层只输出mean，同时采用nn.Parameter的方式来训练一个“状态独立”的log_std，这往往比直接让神经网络同时输出mean和std效果好。（之所以训练log_std，是为了保证std=exp(log_std)>0）  
+
+- Trick 9—Adam Optimizer Epsilon Parameter   
+  把eps从1e-8改成1e-5   
+
+- Trick10—Tanh Activation Function  
+  ReLU改成Tanh，效果存疑。
